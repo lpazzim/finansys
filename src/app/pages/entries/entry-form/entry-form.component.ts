@@ -1,60 +1,102 @@
 import { Component, OnInit, AfterContentChecked } from '@angular/core';
-import { FormBuilder, FormControl, FormGroup, Validators } from '@angular/forms';
-import { ActivatedRoute, Router } from '@angular/router';
+import { FormBuilder, FormControl, FormGroup, Validators } from "@angular/forms";
+import { ActivatedRoute, Router } from "@angular/router";
 
-import { Entry } from '../shared/entry.model';
-import { EntryService } from '../shared/entry.service';
+import { Entry } from "../shared/entry.model";
+import { EntryService } from "../shared/entry.service";
 
-import { switchMap } from 'rxjs/operators';
+import { Category } from "../../categories/shared/category.model";
+import { CategoryService } from "../../categories/shared/category.service";
 
-import toastr from 'toastr';
+import { switchMap } from "rxjs/operators";
+
+import toastr from "toastr";
 
 @Component({
   selector: 'app-entry-form',
   templateUrl: './entry-form.component.html',
-  styleUrls: ['./entry-form.component.scss']
+  styleUrls: ['./entry-form.component.css']
 })
-export class EntryFormComponent implements OnInit, AfterContentChecked {
-
+export class EntryFormComponent implements OnInit, AfterContentChecked{
+  
   currentAction: string;
   entryForm: FormGroup;
   pageTitle: string;
   serverErrorMessages: string[] = null;
   submittingForm: boolean = false;
   entry: Entry = new Entry();
+  categories: Array<Category>;
+
+  imaskConfig = {
+    mask: Number,
+    scale: 2,
+    thousandsSeparator: '',
+    padFractionalZeros: true,
+    normalizeZeros: true,
+    radix: ','
+  };
+
+  ptBR = {
+    firstDayOfWeek: 0,
+    dayNames: ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'],
+    dayNamesShort: ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sab'],
+    dayNamesMin: ['Do', 'Se', 'Te', 'Qu', 'Qu', 'Se', 'Sa'],
+    monthNames: [
+      'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho',
+      'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'
+    ],
+    monthNamesShort: ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'],
+    today: 'Hoje',
+    clear: 'Limpar'
+  }
 
   constructor(
     private entryService: EntryService,
     private route: ActivatedRoute,
     private router: Router,
-    private formBuilder: FormBuilder
+    private formBuilder: FormBuilder,
+    private categoryService: CategoryService
   ) { }
 
   ngOnInit() {
     this.setCurrentAction();
     this.buildEntryForm();
     this.loadEntry();
+    this.loadCategories();
   }
 
-  ngAfterContentChecked() {
+  ngAfterContentChecked(){
     this.setPageTitle();
   }
 
-  submitForm() {
+  submitForm(){
     this.submittingForm = true;
 
-    if (this.currentAction == 'new')
+    if(this.currentAction == "new")
       this.createEntry();
-    else
+    else // currentAction == "edit"
       this.updateEntry();
   }
 
-  //private methods
+  get typeOptions(): Array<any>{
+    return Object.entries(Entry.types).map(
+      ([value, text]) => {
+        return {
+          text: text,
+          value: value
+        }
+      }
+    )
+  }
+
+
+  // PRIVATE METHODS
+
   private setCurrentAction() {
-    if (this.route.snapshot.url[0].path == 'new')
-      this.currentAction = 'new'
+    if(this.route.snapshot.url[0].path == "new")
+      this.currentAction = "new"
     else
-      this.currentAction = 'edit'
+      this.currentAction = "edit"
   }
 
   private buildEntryForm() {
@@ -62,71 +104,87 @@ export class EntryFormComponent implements OnInit, AfterContentChecked {
       id: [null],
       name: [null, [Validators.required, Validators.minLength(2)]],
       description: [null],
-      type: [null, [Validators.required]],
+      type: ["expense", [Validators.required]],
       amount: [null, [Validators.required]],
       date: [null, [Validators.required]],
-      paid: [null, [Validators.required]],
-      categoryId: [null, [Validators.required]],
+      paid: [true, [Validators.required]],
+      categoryId: [null, [Validators.required]]
     });
   }
 
   private loadEntry() {
     if (this.currentAction == "edit") {
+      
       this.route.paramMap.pipe(
-        switchMap(params => this.entryService.getById(+params.get('id')))
+        switchMap(params => this.entryService.getById(+params.get("id")))
       )
-        .subscribe(
-          (entry) => {
-            this.entry = entry;
-            this.entryForm.patchValue(entry) // binds loaded entry data to entryForm
-          }
-        ),
-        (error) => alert('Ocorreu um erro no servidor, tente novamente mais tarde.')
+      .subscribe(
+        (entry) => {
+          this.entry = entry;
+          this.entryForm.patchValue(entry) // binds loaded entry data to EntryForm
+        },
+        (error) => alert('Ocorreu um erro no servidor, tente mais tarde.')
+      )
     }
   }
+
+  private loadCategories(){
+    this.categoryService.getAll().subscribe(
+      categories => this.categories = categories
+    );
+  }
+
 
   private setPageTitle() {
     if (this.currentAction == 'new')
-      this.pageTitle = 'Cadastro de Novo Lançamento'
-    else {
-      const entryName = this.entry.name || ''
-      this.pageTitle = 'Editando Lançamento: ' + entryName;
+      this.pageTitle = "Cadastro de Novo Lançamento"
+    else{
+      const entryName = this.entry.name || ""
+      this.pageTitle = "Editando Lançamento: " + entryName;
     }
   }
 
-  private createEntry() {
-    const entry: Entry = Object.assign(new Entry(), this.entryForm.value);
-    this.entryService.create(entry).subscribe(
-      entry => this.actionsForSuccess(entry),
-      error => this.actionsForError(error),
-    )
-  }
 
-  private updateEntry() {
+  private createEntry(){
     const entry: Entry = Object.assign(new Entry(), this.entryForm.value);
 
-    this.entryService.update(entry).subscribe(
-      entry => this.actionsForSuccess(entry),
-      error => this.actionsForError(error),
+    this.entryService.create(entry)
+      .subscribe(
+        entry => this.actionsForSuccess(entry),
+        error => this.actionsForError(error)
+      )
+  }
+
+
+  private updateEntry(){
+    const entry: Entry = Object.assign(new Entry(), this.entryForm.value);
+
+    this.entryService.update(entry)
+      .subscribe(
+        entry => this.actionsForSuccess(entry),
+        error => this.actionsForError(error)
+      )
+  }
+
+  
+  private actionsForSuccess(entry: Entry){
+    toastr.success("Solicitação processada com sucesso!");
+
+    // redirect/reload component page
+    this.router.navigateByUrl("entries", {skipLocationChange: true}).then(
+      () => this.router.navigate(["entries", entry.id, "edit"])
     )
   }
 
-  private actionsForSuccess(entry: Entry) {
-    toastr.success('Solicitação processada com sucesso!');
-    // redirect para recarregar o componente
-    this.router.navigateByUrl('entries', { skipLocationChange: true }).then(
-      () => this.router.navigate(['entries', entry.id, 'edit'])
-    )
-  }
 
-  private actionsForError(error) {
-    toastr.error('Ocorreu um erro ao processa sua solicitação!');
+  private actionsForError(error){
+    toastr.error("Ocorreu um erro ao processar a sua solicitação!");
 
     this.submittingForm = false;
-    if (error.status === 422)
-      this.serverErrorMessages = JSON.parse(error._body).errors
-    else
-      this.serverErrorMessages = ['Falha na comunicação com o servidor. Por favor tente novamente mais tarde.']
-  }
 
+    if(error.status === 422)
+      this.serverErrorMessages = JSON.parse(error._body).errors;
+    else
+      this.serverErrorMessages = ["Falha na comunicação com o servidor. Por favor, tente mais tarde."]
+  }
 }

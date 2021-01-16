@@ -9,27 +9,26 @@
       "projectType": "application",
       "prefix": "app",
       "schematics": {
-        "@schematics/angular:component": {
-          "style": "scss",
-          "skipTests": true
-        },
         "@schematics/angular:class": {
-          "skipTests": true
+          "spec": false
+        },
+        "@schematics/angular:component": {
+          "spec": false
         },
         "@schematics/angular:directive": {
-          "skipTests": true
+          "spec": false
         },
         "@schematics/angular:guard": {
-          "skipTests": true
+          "spec": false
         },
         "@schematics/angular:module": {
-          "skipTests": true
+          "spec": false
         },
         "@schematics/angular:pipe": {
-          "skipTests": true
+          "spec": false
         },
         "@schematics/angular:service": {
-          "skipTests": true
+          "spec": false
         }
       },
       "architect": {
@@ -46,19 +45,18 @@
               "src/assets"
             ],
             "styles": [
-              "src/styles.scss",
+              "src/styles.css",
               "node_modules/bootstrap/dist/css/bootstrap.min.css",
               "node_modules/toastr/build/toastr.min.css",
               "node_modules/primeicons/primeicons.css",
-              "node_modules/primeng/resources/themes/nova/theme.css",
+              "node_modules/primeng/resources/themes/nova-light/theme.css",
               "node_modules/primeng/resources/primeng.min.css"
             ],
             "scripts": [
-              "node_modules/bootstrap/dist/js/bootstrap.min.js",
               "node_modules/jquery/dist/jquery.min.js",
+              "node_modules/bootstrap/dist/js/bootstrap.min.js",
               "node_modules/chart.js/dist/Chart.bundle.js"
-            ],
-            "es5BrowserSupport": true
+            ]
           },
           "configurations": {
             "production": {
@@ -112,7 +110,7 @@
             "tsConfig": "src/tsconfig.spec.json",
             "karmaConfig": "src/karma.conf.js",
             "styles": [
-              "src/styles.scss"
+              "src/styles.css"
             ],
             "scripts": [],
             "assets": [
