@@ -23,6 +23,6 @@ export class Entry extends BaseResourceModel {
   };
 
   get paidText(): string {
-    return this.paid ? 'Pago' : 'Pedente';
+    return this.paid ? 'Pago' : 'Pendente';
   }
 }
