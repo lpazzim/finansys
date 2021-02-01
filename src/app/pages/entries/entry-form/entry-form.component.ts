@@ -17,8 +17,8 @@ import toastr from "toastr";
   templateUrl: './entry-form.component.html',
   styleUrls: ['./entry-form.component.css']
 })
-export class EntryFormComponent implements OnInit, AfterContentChecked{
-  
+export class EntryFormComponent implements OnInit, AfterContentChecked {
+
   currentAction: string;
   entryForm: FormGroup;
   pageTitle: string;
@@ -65,20 +65,20 @@ export class EntryFormComponent implements OnInit, AfterContentChecked{
     this.loadCategories();
   }
 
-  ngAfterContentChecked(){
+  ngAfterContentChecked() {
     this.setPageTitle();
   }
 
-  submitForm(){
+  submitForm() {
     this.submittingForm = true;
 
-    if(this.currentAction == "new")
+    if (this.currentAction == "new")
       this.createEntry();
     else // currentAction == "edit"
       this.updateEntry();
   }
 
-  get typeOptions(): Array<any>{
+  get typeOptions(): Array<any> {
     return Object.entries(Entry.types).map(
       ([value, text]) => {
         return {
@@ -93,7 +93,7 @@ export class EntryFormComponent implements OnInit, AfterContentChecked{
   // PRIVATE METHODS
 
   private setCurrentAction() {
-    if(this.route.snapshot.url[0].path == "new")
+    if (this.route.snapshot.url[0].path == "new")
       this.currentAction = "new"
     else
       this.currentAction = "edit"
@@ -114,21 +114,21 @@ export class EntryFormComponent implements OnInit, AfterContentChecked{
 
   private loadEntry() {
     if (this.currentAction == "edit") {
-      
+
       this.route.paramMap.pipe(
         switchMap(params => this.entryService.getById(+params.get("id")))
       )
-      .subscribe(
-        (entry) => {
-          this.entry = entry;
-          this.entryForm.patchValue(entry) // binds loaded entry data to EntryForm
-        },
-        (error) => alert('Ocorreu um erro no servidor, tente mais tarde.')
-      )
+        .subscribe(
+          (entry) => {
+            this.entry = entry;
+            this.entryForm.patchValue(entry) // binds loaded entry data to EntryForm
+          },
+          (error) => alert('Ocorreu um erro no servidor, tente mais tarde.')
+        )
     }
   }
 
-  private loadCategories(){
+  private loadCategories() {
     this.categoryService.getAll().subscribe(
       categories => this.categories = categories
     );
@@ -138,15 +138,15 @@ export class EntryFormComponent implements OnInit, AfterContentChecked{
   private setPageTitle() {
     if (this.currentAction == 'new')
       this.pageTitle = "Cadastro de Novo Lançamento"
-    else{
+    else {
       const entryName = this.entry.name || ""
       this.pageTitle = "Editando Lançamento: " + entryName;
     }
   }
 
 
-  private createEntry(){
-    const entry: Entry = Object.assign(new Entry(), this.entryForm.value);
+  private createEntry() {
+    const entry: Entry = Entry.fromJson(this.entryForm.value);
 
     this.entryService.create(entry)
       .subscribe(
@@ -156,8 +156,8 @@ export class EntryFormComponent implements OnInit, AfterContentChecked{
   }
 
 
-  private updateEntry(){
-    const entry: Entry = Object.assign(new Entry(), this.entryForm.value);
+  private updateEntry() {
+    const entry: Entry = Entry.fromJson(this.entryForm.value);
 
     this.entryService.update(entry)
       .subscribe(
@@ -166,23 +166,23 @@ export class EntryFormComponent implements OnInit, AfterContentChecked{
       )
   }
 
-  
-  private actionsForSuccess(entry: Entry){
+
+  private actionsForSuccess(entry: Entry) {
     toastr.success("Solicitação processada com sucesso!");
 
     // redirect/reload component page
-    this.router.navigateByUrl("entries", {skipLocationChange: true}).then(
+    this.router.navigateByUrl("entries", { skipLocationChange: true }).then(
       () => this.router.navigate(["entries", entry.id, "edit"])
     )
   }
 
 
-  private actionsForError(error){
+  private actionsForError(error) {
     toastr.error("Ocorreu um erro ao processar a sua solicitação!");
 
     this.submittingForm = false;
 
-    if(error.status === 422)
+    if (error.status === 422)
       this.serverErrorMessages = JSON.parse(error._body).errors;
     else
       this.serverErrorMessages = ["Falha na comunicação com o servidor. Por favor, tente mais tarde."]
